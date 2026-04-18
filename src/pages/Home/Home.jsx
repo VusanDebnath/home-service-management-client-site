@@ -124,59 +124,65 @@ const Home = () => {
         {/* Decorations */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4" />
-        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-white/5 rounded-full" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 md:py-32">
-          <div className="max-w-2xl">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-1.5 rounded-full mb-6 border border-white/20">
-              <FiStar size={13} className="text-yellow-300" />
-              Trusted by 10,000+ homeowners
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <div>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm px-4 py-1.5 rounded-full mb-6 border border-white/20">
+                <FiStar size={13} className="text-yellow-300" />
+                Trusted by 10,000+ homeowners
+              </div>
 
-            <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
-              Home Services,
-              <br />
-              <span className="text-yellow-300">Done Right.</span>
-            </h1>
+              <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+                Home Services,
+                <br />
+                <span className="text-yellow-300">Done Right.</span>
+              </h1>
 
-            <p className="text-blue-100 text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
-              Connect with verified, professional service providers for all your
-              home repair and maintenance needs — fast, easy, and reliable.
-            </p>
+              <p className="text-blue-100 text-lg leading-relaxed mb-10 max-w-xl">
+                Connect with verified, professional service providers for all
+                your home repair and maintenance needs — fast, easy, and
+                reliable.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                to="/services"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-blue-800/30 text-sm"
-              >
-                Explore Services
-                <FiArrowRight size={16} />
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/25 transition-all border border-white/30 text-sm"
-              >
-                Become a Provider
-              </Link>
-            </div>
-
-            {/* Trust badges */}
-            <div className="flex flex-wrap gap-5 mt-10">
-              {[
-                { icon: FiShield, text: "Verified Providers" },
-                { icon: FiClock, text: "24/7 Support" },
-                { icon: FiCheckCircle, text: "Satisfaction Guaranteed" },
-              ].map(({ icon: Icon, text }) => (
-                <div
-                  key={text}
-                  className="flex items-center gap-2 text-blue-100 text-sm"
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/services"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg shadow-blue-800/30 text-sm"
                 >
-                  <Icon size={15} className="text-yellow-300" />
-                  {text}
-                </div>
-              ))}
+                  Explore Services
+                  <FiArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/25 transition-all border border-white/30 text-sm"
+                >
+                  Become a Provider
+                </Link>
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap gap-5 mt-10">
+                {[
+                  { icon: FiShield, text: "Verified Providers" },
+                  { icon: FiClock, text: "24/7 Support" },
+                  { icon: FiCheckCircle, text: "Satisfaction Guaranteed" },
+                ].map(({ icon: Icon, text }) => (
+                  <div
+                    key={text}
+                    className="flex items-center gap-2 text-blue-100 text-sm"
+                  >
+                    <Icon size={15} className="text-yellow-300" />
+                    {text}
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Right Side — Visual Card */}
+            
           </div>
         </div>
       </section>
