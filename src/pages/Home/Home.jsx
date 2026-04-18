@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import HomeIllustration from "../../assets/HomeIllustration";
+
 import {
   FiArrowRight,
   FiStar,
@@ -181,7 +183,12 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Right Side — Visual Card */}
+            {/* Right Side — Illustration */}
+            <div className="hidden lg:flex items-center justify-center">
+              <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/30">
+                <HomeIllustration />
+              </div>
+            </div>
             
           </div>
         </div>
