@@ -1,22 +1,26 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import useAuth from "./hooks/useAuth";
 
-import MainLayout from "./layouts/MainLayout";
-import DashboardLayout from "./layouts/DashboardLayout";
 import AdminLayout from "./layouts/AdminLayout";
-import PrivateRoute from "./routes/PrivateRoute";
+import DashboardLayout from "./layouts/DashboardLayout";
+import MainLayout from "./layouts/MainLayout";
 import AdminRoute from "./routes/AdminRoute";
+import PrivateRoute from "./routes/PrivateRoute";
 import ProviderRoute from "./routes/ProviderRoute";
 
-import Home from "./pages/Home/Home";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
+import Home from "./pages/Home/Home";
 import AllServices from "./pages/Services/AllServices";
 import ServiceDetails from "./pages/Services/ServiceDetails";
-import CustomerDashboard from "./pages/Dashboard/Customer/CustomerDashboard";
-import ProviderDashboard from "./pages/Dashboard/Provider/ProviderDashboard";
+
+import CustomerDashboardHome from "./pages/Dashboard/Customer/CustomerDashboardHome";
+import MyBookings from "./pages/Dashboard/Customer/MyBookings";
+import MyProfile from "./pages/Dashboard/Customer/MyProfile";
+
 import AdminDashboard from "./pages/Dashboard/Admin/AdminDashboard";
+import ProviderDashboard from "./pages/Dashboard/Provider/ProviderDashboard";
 import ErrorPage from "./pages/ErrorPage";
 
 const App = () => {
@@ -25,6 +29,23 @@ const App = () => {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Dummy for test
+  // const { checkAuth, login } = useAuth();
+
+  // useEffect(() => {
+  //   checkAuth();
+
+  //   // ── Temporary: Fake login for testing ──
+  //   // Real backend হলে এই অংশ delete করবো
+  //   const testToken =
+  //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJuYW1lIjoiUmFoaW0gQWhtZWQiLCJlbWFpbCI6InJhaGltQGdtYWlsLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImV4cCI6OTk5OTk5OTk5OX0.fake";
+
+  //   // LocalStorage এ token নেই তাহলে fake token দাও
+  //   if (!localStorage.getItem("token")) {
+  //     login(testToken);
+  //   }
+  // }, []);
 
   return (
     <Routes>
@@ -40,6 +61,7 @@ const App = () => {
       </Route>
 
       {/* Customer & Provider Dashboard */}
+      {/* Customer Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -48,7 +70,16 @@ const App = () => {
           </PrivateRoute>
         }
       >
-        <Route index element={<CustomerDashboard />} />
+        {/* /dashboard → CustomerDashboardHome */}
+        <Route index element={<CustomerDashboardHome />} />
+
+        {/* /dashboard/bookings → MyBookings */}
+        <Route path="bookings" element={<MyBookings />} />
+
+        {/* /dashboard/profile → MyProfile */}
+        <Route path="profile" element={<MyProfile />} />
+
+        {/* /dashboard/provider → ProviderDashboard */}
         <Route
           path="provider"
           element={
