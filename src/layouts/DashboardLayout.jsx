@@ -1,21 +1,33 @@
 import { useState } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
-  FiHome,
+  FiBell,
   FiCalendar,
-  FiUser,
+  FiHome,
   FiLogOut,
   FiMenu,
+  FiUser,
   FiX,
-  FiBell,
 } from "react-icons/fi";
 import { MdHomeRepairService } from "react-icons/md";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 
 // Navigation items
 const customerNav = [
   { label: "Dashboard", icon: FiHome, path: "/dashboard" },
   { label: "My Bookings", icon: FiCalendar, path: "/dashboard/bookings" },
+  { label: "My Profile", icon: FiUser, path: "/dashboard/profile" },
+];
+
+// Provider এর জন্য আলাদা navigation, কারণ তাদের dashboard এ extra pages আছে
+const providerNav = [
+  { label: "Dashboard", icon: FiHome, path: "/dashboard/provider" },
+  {
+    label: "My Services",
+    icon: MdHomeRepairService,
+    path: "/dashboard/provider/services",
+  },
+  { label: "Bookings", icon: FiCalendar, path: "/dashboard/provider/bookings" },
   { label: "My Profile", icon: FiUser, path: "/dashboard/profile" },
 ];
 
@@ -59,24 +71,29 @@ const SidebarContent = ({ user, onLogout, onClose }) => (
       <p className="text-gray-500 text-xs font-medium uppercase tracking-wider px-3 mb-3">
         Main Menu
       </p>
-      {customerNav.map(({ label, icon: Icon, path }) => (
-        <NavLink
-          key={path}
-          to={path}
-          end={path === "/dashboard"}
-          onClick={onClose}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              isActive
-                ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
-                : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-            }`
-          }
-        >
-          <Icon size={18} />
-          {label}
-        </NavLink>
-      ))}
+      
+      // User এর role অনুযায়ী navigation দেখাবে, provider হলে providerNav,
+      অন্যথায় customerNav
+      {(user?.role === "provider" ? providerNav : customerNav).map(
+        ({ label, icon: Icon, path }) => (
+          <NavLink
+            key={path}
+            to={path}
+            end={path === "/dashboard/provider" || path === "/dashboard"}
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/50"
+                  : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
+              }`
+            }
+          >
+            <Icon size={18} />
+            {label}
+          </NavLink>
+        ),
+      )}
     </nav>
 
     {/* Logout */}

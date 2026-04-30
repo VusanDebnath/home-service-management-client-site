@@ -29,22 +29,46 @@ const useAuthStore = create()(
 
         checkAuth: () => {
           const token = localStorage.getItem("token");
-          if (!token) {
-            set({ user: null, token: null });
-            return;
-          }
-          try {
-            const decoded = jwtDecode(token);
-            if (decoded.exp * 1000 < Date.now()) {
-              localStorage.removeItem("token");
-              set({ user: null, token: null }, false, "tokenExpired");
-            } else {
-              set({ user: decoded, token }, false, "checkAuth");
+
+          // Zustand persist থেকে directly user নাও
+          const stored = localStorage.getItem("auth-storage");
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              const storedUser = parsed?.state?.user;
+              const storedToken = parsed?.state?.token;
+
+              if (storedUser && storedToken) {
+                // dev-test-token হলে decode করার দরকার নেই
+                if (storedToken === "dev-test-token") {
+                  set(
+                    { user: storedUser, token: storedToken },
+                    false,
+                    "checkAuth",
+                  );
+                  return;
+                }
+
+                // Real JWT token হলে decode করো
+                const decoded = jwtDecode(storedToken);
+                if (decoded.exp * 1000 < Date.now()) {
+                  localStorage.removeItem("auth-storage");
+                  set({ user: null, token: null }, false, "tokenExpired");
+                } else {
+                  set(
+                    { user: decoded, token: storedToken },
+                    false,
+                    "checkAuth",
+                  );
+                }
+                return;
+              }
+            } catch {
+              // parse error
             }
-          } catch {
-            localStorage.removeItem("token");
-            set({ user: null, token: null }, false, "invalidToken");
           }
+
+          set({ user: null, token: null });
         },
       }),
       {

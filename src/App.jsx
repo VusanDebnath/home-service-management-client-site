@@ -20,8 +20,17 @@ import MyBookings from "./pages/Dashboard/Customer/MyBookings";
 import MyProfile from "./pages/Dashboard/Customer/MyProfile";
 
 import AdminDashboard from "./pages/Dashboard/Admin/AdminDashboard";
-import ProviderDashboard from "./pages/Dashboard/Provider/ProviderDashboard";
+
+import ManageServices from "./pages/Dashboard/Provider/ManageServices";
+import ProviderBookings from "./pages/Dashboard/Provider/ProviderBookings";
+import ProviderDashboardHome from "./pages/Dashboard/Provider/ProviderDashboardHome";
+
 import ErrorPage from "./pages/ErrorPage";
+
+// Development helper, শুধু development এ দেখাবে
+// Backend ready হলে এই file টা delete করবো
+import DevHelper from "./components/common/DevHelper";
+
 
 const App = () => {
   const { checkAuth } = useAuth();
@@ -30,80 +39,85 @@ const App = () => {
     checkAuth();
   }, []);
 
-  // Dummy for test
-  // const { checkAuth, login } = useAuth();
-
-  // useEffect(() => {
-  //   checkAuth();
-
-  //   // ── Temporary: Fake login for testing ──
-  //   // Real backend হলে এই অংশ delete করবো
-  //   const testToken =
-  //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJuYW1lIjoiUmFoaW0gQWhtZWQiLCJlbWFpbCI6InJhaGltQGdtYWlsLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImV4cCI6OTk5OTk5OTk5OX0.fake";
-
-  //   // LocalStorage এ token নেই তাহলে fake token দাও
-  //   if (!localStorage.getItem("token")) {
-  //     login(testToken);
-  //   }
-  // }, []);
-
   return (
-    <Routes>
-      {/* Auth Pages — Navbar/Footer ছাড়া */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <>
+      <Routes>
+        {/* Auth Pages — Navbar/Footer ছাড়া */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* Public Routes — MainLayout সহ */}
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/services" element={<AllServices />} />
-        <Route path="/services/:id" element={<ServiceDetails />} />
-      </Route>
+        {/* Public Routes — MainLayout সহ */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/services" element={<AllServices />} />
+          <Route path="/services/:id" element={<ServiceDetails />} />
+        </Route>
 
-      {/* Customer & Provider Dashboard */}
-      {/* Customer Dashboard */}
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <DashboardLayout />
-          </PrivateRoute>
-        }
-      >
-        {/* /dashboard → CustomerDashboardHome */}
-        <Route index element={<CustomerDashboardHome />} />
-
-        {/* /dashboard/bookings → MyBookings */}
-        <Route path="bookings" element={<MyBookings />} />
-
-        {/* /dashboard/profile → MyProfile */}
-        <Route path="profile" element={<MyProfile />} />
-
-        {/* /dashboard/provider → ProviderDashboard */}
+        {/* Customer & Provider Dashboard */}
+        {/* Customer Dashboard */}
         <Route
-          path="provider"
+          path="/dashboard"
           element={
-            <ProviderRoute>
-              <ProviderDashboard />
-            </ProviderRoute>
+            <PrivateRoute>
+              <DashboardLayout />
+            </PrivateRoute>
           }
-        />
-      </Route>
+        >
+          {/* /dashboard → CustomerDashboardHome */}
+          <Route index element={<CustomerDashboardHome />} />
 
-      {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminLayout />
-          </AdminRoute>
-        }
-      >
-        <Route path="dashboard" element={<AdminDashboard />} />
-      </Route>
+          {/* /dashboard/bookings → MyBookings */}
+          <Route path="bookings" element={<MyBookings />} />
 
-      <Route path="*" element={<ErrorPage />} />
-    </Routes>
+          {/* /dashboard/profile → MyProfile */}
+          <Route path="profile" element={<MyProfile />} />
+
+          {/* /dashboard/provider → ProviderDashboard */}
+          {/* /dashboard/provider → ProviderDashboardHome */}
+          <Route
+            path="provider"
+            element={
+              <ProviderRoute>
+                <ProviderDashboardHome />
+              </ProviderRoute>
+            }
+          />
+          <Route
+            path="provider/services"
+            element={
+              <ProviderRoute>
+                <ManageServices />
+              </ProviderRoute>
+            }
+          />
+          <Route
+            path="provider/bookings"
+            element={
+              <ProviderRoute>
+                <ProviderBookings />
+              </ProviderRoute>
+            }
+          />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+        </Route>
+
+        <Route path="*" element={<ErrorPage />} />
+      </Routes>
+
+      {/* Development Helper - Sodho Development er jonno Backend ready hole delete kore dibo */}
+      <DevHelper />
+    </>
   );
 };
 

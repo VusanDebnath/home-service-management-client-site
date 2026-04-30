@@ -1,0 +1,112 @@
+export const PROVIDER_STATS = [
+  { label: "Total Services", value: 5 },
+  { label: "Total Bookings", value: 38 },
+  { label: "Completed Jobs", value: 31 },
+  { label: "Total Earnings", value: "৳42,500" },
+];
+
+export const PROVIDER_SERVICES = [
+  {
+    id: "1",
+    title: "Professional Plumbing Repair",
+    category: "Plumbing",
+    price: 500,
+    image:
+      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
+    rating: 4.8,
+    reviewCount: 124,
+    totalBookings: 18,
+    isAvailable: true,
+    isApproved: true,
+  },
+  {
+    id: "2",
+    title: "Pipe Installation & Fitting",
+    category: "Plumbing",
+    price: 700,
+    image:
+      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400&q=80",
+    rating: 4.6,
+    reviewCount: 56,
+    totalBookings: 12,
+    isAvailable: true,
+    isApproved: true,
+  },
+  {
+    id: "3",
+    title: "Bathroom Renovation",
+    category: "Plumbing",
+    price: 3500,
+    image:
+      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400&q=80",
+    rating: 4.9,
+    reviewCount: 23,
+    totalBookings: 8,
+    isAvailable: false,
+    isApproved: true,
+  },
+  {
+    id: "4",
+    title: "Emergency Plumbing Service",
+    category: "Plumbing",
+    price: 1200,
+    image:
+      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
+    rating: 0,
+    reviewCount: 0,
+    totalBookings: 0,
+    isAvailable: true,
+    isApproved: false, // pending approval
+  },
+];
+
+export const PROVIDER_BOOKINGS = [
+  {
+    id: "1",
+    customerName: "Ahmed Rahman",
+    customerEmail: "ahmed@gmail.com",
+    service: "Professional Plumbing Repair",
+    date: "2025-01-20",
+    time: "10:00 AM",
+    location: "Dhaka",
+    address: "House 12, Road 5, Dhanmondi",
+    status: "pending",
+    price: 500,
+  },
+  {
+    id: "2",
+    customerName: "Sarah Islam",
+    customerEmail: "sarah@gmail.com",
+    service: "Pipe Installation & Fitting",
+    date: "2025-01-18",
+    time: "2:00 PM",
+    location: "Dhaka",
+    address: "Apt 4B, Gulshan Avenue",
+    status: "confirmed",
+    price: 700,
+  },
+  {
+    id: "3",
+    customerName: "Karim Hassan",
+    customerEmail: "karim@gmail.com",
+    service: "Professional Plumbing Repair",
+    date: "2025-01-15",
+    time: "9:00 AM",
+    location: "Chittagong",
+    address: "Plot 7, Agrabad",
+    status: "completed",
+    price: 500,
+  },
+  {
+    id: "4",
+    customerName: "Priya Das",
+    customerEmail: "priya@gmail.com",
+    service: "Bathroom Renovation",
+    date: "2025-01-10",
+    time: "11:00 AM",
+    location: "Dhaka",
+    address: "House 3, Uttara Sector 7",
+    status: "completed",
+    price: 3500,
+  },
+];
