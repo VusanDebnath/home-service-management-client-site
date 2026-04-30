@@ -19,7 +19,10 @@ import CustomerDashboardHome from "./pages/Dashboard/Customer/CustomerDashboardH
 import MyBookings from "./pages/Dashboard/Customer/MyBookings";
 import MyProfile from "./pages/Dashboard/Customer/MyProfile";
 
-import AdminDashboard from "./pages/Dashboard/Admin/AdminDashboard";
+import AdminDashboardHome from "./pages/Dashboard/Admin/AdminDashboardHome";
+import AdminManageServices from "./pages/Dashboard/Admin/AdminManageServices";
+import ManageBookings from "./pages/Dashboard/Admin/ManageBookings";
+import ManageUsers from "./pages/Dashboard/Admin/ManageUsers";
 
 import ManageServices from "./pages/Dashboard/Provider/ManageServices";
 import ProviderBookings from "./pages/Dashboard/Provider/ProviderBookings";
@@ -30,7 +33,6 @@ import ErrorPage from "./pages/ErrorPage";
 // Development helper, শুধু development এ দেখাবে
 // Backend ready হলে এই file টা delete করবো
 import DevHelper from "./components/common/DevHelper";
-
 
 const App = () => {
   const { checkAuth } = useAuth();
@@ -109,7 +111,10 @@ const App = () => {
             </AdminRoute>
           }
         >
-          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboardHome />} />
+          <Route path="users" element={<ManageUsers />} />
+          <Route path="services" element={<AdminManageServices />} />
+          <Route path="bookings" element={<ManageBookings />} />
         </Route>
 
         <Route path="*" element={<ErrorPage />} />
