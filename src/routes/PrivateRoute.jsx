@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import Loader from "../components/common/Loader";
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -7,11 +8,7 @@ const PrivateRoute = ({ children }) => {
 
   // এখনো check হচ্ছে, wait করো
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <Loader fullScreen />;
   }
 
   // user নেই মানে login করেনি

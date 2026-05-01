@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiSearch, FiX, FiShield, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { ADMIN_USERS } from "../../../data/admin.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const ROLE_TABS = [
   { label: "All", value: "all" },
@@ -51,6 +52,7 @@ const ManageUsers = () => {
     // Backend হলে: await axiosSecure.patch(`/users/${id}/make-admin`)
   };
 
+  usePageTitle("Manage Users - Admin Dashboard");// Set page title for better UX and SEO
   return (
     <div className="space-y-6">
       {/* Header */}

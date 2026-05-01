@@ -7,12 +7,15 @@ import useAuth from "../../hooks/useAuth";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { MdHomeRepairService } from "react-icons/md";
 
+import usePageTitle from "../../hooks/usePageTitle";
+
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  usePageTitle("Sign In");
 
   const from = location.state?.from?.pathname || "/dashboard";
 

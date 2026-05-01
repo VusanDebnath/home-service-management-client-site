@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const MyProfile = () => {
   const { user } = useAuth();
@@ -62,6 +63,7 @@ const MyProfile = () => {
     }
   };
 
+  usePageTitle("My Profile");// Set page title to "My Profile"
   return (
     <div className="space-y-6">
       {/* Header */}

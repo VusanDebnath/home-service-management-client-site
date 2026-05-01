@@ -15,6 +15,8 @@ import {
   PROVIDER_SERVICES,
 } from "../../../data/provider.data";
 
+import usePageTitle from "./../../../hooks/usePageTitle";
+
 const statusConfig = {
   pending: { label: "Pending", class: "bg-yellow-100 text-yellow-700" },
   confirmed: { label: "Confirmed", class: "bg-blue-100 text-blue-700" },
@@ -36,6 +38,7 @@ const ProviderDashboardHome = () => {
   const approvedServices = PROVIDER_SERVICES.filter((s) => s.isApproved);
   const pendingServices = PROVIDER_SERVICES.filter((s) => !s.isApproved);
 
+  usePageTitle("Provider Dashboard - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}

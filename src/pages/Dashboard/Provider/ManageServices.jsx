@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { PROVIDER_SERVICES } from "../../../data/provider.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const CATEGORIES = [
   "Plumbing",
@@ -107,6 +108,7 @@ const ManageServices = () => {
     // Backend হলে: await axiosSecure.patch(`/services/${id}/toggle`)
   };
 
+  usePageTitle("Manage Services - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
   return (
     <div className="space-y-6">
       {/* Header */}

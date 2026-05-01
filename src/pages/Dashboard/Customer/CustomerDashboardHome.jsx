@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import useAuth from "../../../hooks/useAuth";
 import { DUMMY_BOOKINGS, DUMMY_STATS } from "../../../data/bookings.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 // Status এর color আর label এক জায়গায়
 const statusConfig = {
@@ -32,6 +33,7 @@ const CustomerDashboardHome = () => {
   // Recent bookings — শুধু প্রথম ৩টা দেখাবো
   const recentBookings = DUMMY_BOOKINGS.slice(0, 3);
 
+  usePageTitle("Dashboard - Home");// পেজ টাইটেল সেট করার জন্য কাস্টম হুক ব্যবহার করছি
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}

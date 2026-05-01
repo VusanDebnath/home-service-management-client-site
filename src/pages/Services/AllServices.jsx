@@ -10,6 +10,7 @@ import {
   MdBuild,
 } from "react-icons/md";
 import ServiceCard from "../../components/home/ServiceCard";
+import usePageTitle from "../../hooks/usePageTitle";
 
 import { DUMMY_SERVICES } from "../../data/services.data"; // Dummy data for testing, replace with API data in production
 
@@ -222,6 +223,8 @@ const AllServices = () => {
     return result;
   }, [activeCategory, search, sortBy]);
 
+  usePageTitle("All Services - Home Service Management");// Custom hook to set page title (SEO এর জন্য ভালো, এবং user experience এর জন্যও ভালো)
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Page Header ── */}

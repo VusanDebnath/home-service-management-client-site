@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiSearch, FiX, FiCheck, FiTrash2, FiStar } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { ADMIN_SERVICES } from "../../../data/admin.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -39,6 +40,8 @@ const AdminManageServices = () => {
     toast.success("Service deleted!");
     // Backend হলে: await axiosSecure.delete(`/services/${id}`)
   };
+
+  usePageTitle("Manage Services - Admin Dashboard");// Set page title for better UX and SEO
 
   return (
     <div className="space-y-6">

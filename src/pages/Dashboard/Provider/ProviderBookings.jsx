@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { PROVIDER_BOOKINGS } from "../../../data/provider.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -57,6 +58,7 @@ const ProviderBookings = () => {
     // Backend হলে: await axiosSecure.patch(`/bookings/${id}/cancel`)
   };
 
+  usePageTitle("Provider Bookings - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
   return (
     <div className="space-y-6">
       {/* Header */}

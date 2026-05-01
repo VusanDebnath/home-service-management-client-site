@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import HomeIllustration from "../../assets/HomeIllustration";
+import usePageTitle from "../../hooks/usePageTitle";
 
 import {
   FiArrowRight,
@@ -119,6 +120,7 @@ const stats = [
 // ── Component ──────────────────────────────────────
 
 const Home = () => {
+  usePageTitle("Home");
   return (
     <div className="bg-white">
       {/* ── Hero ── */}

@@ -13,6 +13,8 @@ import { MdHomeRepairService } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { axiosPublic } from "../../utils/axios";
+import usePageTitle from './../../hooks/usePageTitle';
+
 
 // Reusable Input Component
 const InputField = ({ icon: Icon, error, rightElement, ...props }) => (
@@ -73,6 +75,8 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  usePageTitle("Create Account"); // Set page title to "Create Account"
 
   return (
     <div className="min-h-screen flex">

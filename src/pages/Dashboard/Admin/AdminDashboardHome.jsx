@@ -16,6 +16,8 @@ import {
   ADMIN_BOOKINGS,
 } from "../../../data/admin.data";
 
+import usePageTitle from "./../../../hooks/usePageTitle";
+
 const statsIcons = [
   { icon: FiUsers, color: "bg-blue-50 text-blue-600" },
   { icon: MdHomeRepairService, color: "bg-green-50 text-green-600" },
@@ -35,6 +37,7 @@ const AdminDashboardHome = () => {
   const recentBookings = ADMIN_BOOKINGS.slice(0, 3);
   const recentUsers = ADMIN_USERS.slice(0, 4);
 
+  usePageTitle("Admin Dashboard - Home"); // Set page title for better UX and SEO
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}

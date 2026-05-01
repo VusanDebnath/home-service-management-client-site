@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiSearch, FiX, FiCalendar, FiClock, FiMapPin } from "react-icons/fi";
 import { ADMIN_BOOKINGS } from "../../../data/admin.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -30,6 +31,7 @@ const ManageBookings = () => {
     return matchTab && matchSearch;
   });
 
+  usePageTitle("Manage Bookings - Admin Dashboard");// Set page title for better UX and SEO
   return (
     <div className="space-y-6">
       {/* Header */}

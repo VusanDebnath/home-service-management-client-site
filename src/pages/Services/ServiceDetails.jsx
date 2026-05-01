@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import usePageTitle from "./../../hooks/usePageTitle";
 
 // Dummy data for testing, replace with API data in production
 import { DUMMY_SERVICES } from "../../data/services.data"; 
@@ -164,6 +165,8 @@ const ServiceDetails = () => {
     "3:00 PM",
     "4:00 PM",
   ];
+
+  usePageTitle(`${service.title} - Service Details`); // Custom hook to set page title (SEO এর জন্য ভালো, এবং user experience এর জন্যও ভালো)
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -30,6 +30,9 @@ import ProviderDashboardHome from "./pages/Dashboard/Provider/ProviderDashboardH
 
 import ErrorPage from "./pages/ErrorPage";
 
+// ScrollToTop component, page change হলে top এ scroll করার জন্য
+import ScrollToTop from "./components/common/ScrollToTop";
+
 // Development helper, শুধু development এ দেখাবে
 // Backend ready হলে এই file টা delete করবো
 import DevHelper from "./components/common/DevHelper";
@@ -43,6 +46,10 @@ const App = () => {
 
   return (
     <>
+      {/* page change হলে top এ scroll করার জন্য */}
+      <ScrollToTop />
+
+      {/* Routes */}
       <Routes>
         {/* Auth Pages — Navbar/Footer ছাড়া */}
         <Route path="/login" element={<Login />} />

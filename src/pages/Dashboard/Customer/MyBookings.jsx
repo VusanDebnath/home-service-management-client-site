@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiCalendar, FiClock, FiMapPin, FiStar, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { DUMMY_BOOKINGS } from "../../../data/bookings.data";
+import usePageTitle from './../../../hooks/usePageTitle';
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -46,6 +47,7 @@ const MyBookings = () => {
     // Backend হলে: axiosSecure.post('/reviews', { bookingId, rating, comment })
   };
 
+  usePageTitle("My Bookings - ServiceHub");// Set page title using custom hook
   return (
     <div className="space-y-6">
       {/* Header */}
