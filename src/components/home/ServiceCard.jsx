@@ -8,7 +8,7 @@ const ServiceCard = ({ service }) => {
     category,
     price,
     image,
-    providerName,
+    providerId,
     rating,
     reviewCount,
     location,
@@ -21,15 +21,16 @@ const ServiceCard = ({ service }) => {
       {/* Image */}
       <div className="relative overflow-hidden h-48">
         <img
-          src={image}
+          src={
+            image ||
+            "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80"
+          }
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        {/* Category Badge */}
         <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
           {category}
         </span>
-        {/* Availability Badge */}
         <span
           className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full ${
             isAvailable ? "bg-green-500 text-white" : "bg-gray-400 text-white"
@@ -46,25 +47,33 @@ const ServiceCard = ({ service }) => {
           {title}
         </h3>
 
-        {/* Provider */}
-        <p className="text-gray-500 text-sm mb-3">by {providerName}</p>
+        {/* Provider — Backend থেকে populate হয়ে আসে */}
+        <p className="text-gray-500 text-sm mb-3">
+          by {providerId?.name || "Unknown Provider"}
+        </p>
 
         {/* Rating */}
         <div className="flex items-center gap-1.5 mb-3">
           <FiStar size={14} className="text-yellow-400 fill-yellow-400" />
-          <span className="font-semibold text-gray-800 text-sm">{rating}</span>
-          <span className="text-gray-400 text-sm">({reviewCount} reviews)</span>
+          <span className="font-semibold text-gray-800 text-sm">
+            {rating > 0 ? rating : "New"}
+          </span>
+          {reviewCount > 0 && (
+            <span className="text-gray-400 text-sm">
+              ({reviewCount} reviews)
+            </span>
+          )}
         </div>
 
         {/* Location & Duration */}
         <div className="flex items-center gap-4 text-gray-500 text-xs mb-4">
           <span className="flex items-center gap-1">
             <FiMapPin size={12} />
-            {location}
+            {location || "Dhaka"}
           </span>
           <span className="flex items-center gap-1">
             <FiClock size={12} />
-            {duration}
+            {duration || "1-2 hours"}
           </span>
         </div>
 

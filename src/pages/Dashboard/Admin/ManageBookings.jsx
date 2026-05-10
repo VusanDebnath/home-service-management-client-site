@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiSearch, FiX, FiCalendar, FiClock, FiMapPin } from "react-icons/fi";
-import { ADMIN_BOOKINGS } from "../../../data/admin.data";
-import usePageTitle from './../../../hooks/usePageTitle';
+import toast from "react-hot-toast";
+import { axiosSecure } from "../../../utils/axios";
+import usePageTitle from "../../../hooks/usePageTitle";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -19,19 +20,44 @@ const statusConfig = {
 };
 
 const ManageBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
 
-  const filteredBookings = ADMIN_BOOKINGS.filter((b) => {
+  usePageTitle("Manage Bookings");
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await axiosSecure.get("/bookings");
+        setBookings(res.data.bookings || []);
+      } catch {
+        toast.error("Failed to load bookings.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
+
+  const filteredBookings = bookings.filter((b) => {
     const matchTab = activeTab === "all" || b.status === activeTab;
     const matchSearch =
-      b.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      b.providerName.toLowerCase().includes(search.toLowerCase()) ||
-      b.service.toLowerCase().includes(search.toLowerCase());
+      b.customerId?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      b.providerId?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      b.serviceId?.title?.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
 
-  usePageTitle("Manage Bookings - Admin Dashboard");// Set page title for better UX and SEO
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -86,8 +112,8 @@ const ManageBookings = () => {
               }`}
             >
               {value === "all"
-                ? ADMIN_BOOKINGS.length
-                : ADMIN_BOOKINGS.filter((b) => b.status === value).length}
+                ? bookings.length
+                : bookings.filter((b) => b.status === value).length}
             </span>
           </button>
         ))}
@@ -119,28 +145,28 @@ const ManageBookings = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredBookings.map((booking) => (
                 <tr
-                  key={booking.id}
+                  key={booking._id}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-6 py-4">
                     <p className="font-medium text-gray-900 text-sm">
-                      {booking.service}
+                      {booking.serviceId?.title || "Service"}
                     </p>
                     <p className="text-gray-400 text-xs flex items-center gap-1 mt-0.5">
-                      <FiMapPin size={10} /> {booking.location}
+                      <FiMapPin size={10} /> {booking.address}
                     </p>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-gray-800 text-sm font-medium">
-                      {booking.customerName}
+                      {booking.customerId?.name || "Customer"}
                     </p>
                     <p className="text-gray-400 text-xs">
-                      {booking.customerEmail}
+                      {booking.customerId?.email}
                     </p>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-gray-800 text-sm font-medium">
-                      {booking.providerName}
+                      {booking.providerId?.name || "Provider"}
                     </p>
                   </td>
                   <td className="px-6 py-4">
@@ -154,9 +180,9 @@ const ManageBookings = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[booking.status].class}`}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[booking.status]?.class}`}
                     >
-                      {statusConfig[booking.status].label}
+                      {statusConfig[booking.status]?.label}
                     </span>
                   </td>
                   <td className="px-6 py-4">

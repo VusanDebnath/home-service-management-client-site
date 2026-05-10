@@ -22,15 +22,13 @@ const useAuthStore = create()(
 
         logout: () => {
           localStorage.removeItem("token");
+          localStorage.removeItem("auth-storage");
           set({ user: null, token: null }, false, "logout");
         },
 
         setLoading: (loading) => set({ loading }, false, "setLoading"),
 
         checkAuth: () => {
-          const token = localStorage.getItem("token");
-
-          // Zustand persist থেকে directly user নাও
           const stored = localStorage.getItem("auth-storage");
           if (stored) {
             try {
@@ -39,7 +37,7 @@ const useAuthStore = create()(
               const storedToken = parsed?.state?.token;
 
               if (storedUser && storedToken) {
-                // dev-test-token হলে decode করার দরকার নেই
+                // Dev test token
                 if (storedToken === "dev-test-token") {
                   set(
                     { user: storedUser, token: storedToken },
@@ -49,14 +47,15 @@ const useAuthStore = create()(
                   return;
                 }
 
-                // Real JWT token হলে decode করো
+                // Real JWT token
                 const decoded = jwtDecode(storedToken);
                 if (decoded.exp * 1000 < Date.now()) {
+                  localStorage.removeItem("token");
                   localStorage.removeItem("auth-storage");
                   set({ user: null, token: null }, false, "tokenExpired");
                 } else {
                   set(
-                    { user: decoded, token: storedToken },
+                    { user: storedUser, token: storedToken },
                     false,
                     "checkAuth",
                   );
@@ -67,7 +66,6 @@ const useAuthStore = create()(
               // parse error
             }
           }
-
           set({ user: null, token: null });
         },
       }),

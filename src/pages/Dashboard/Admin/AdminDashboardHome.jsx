@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FiUsers,
@@ -5,18 +6,11 @@ import {
   FiArrowRight,
   FiTrendingUp,
   FiCheckCircle,
-  FiClock,
-  FiXCircle,
 } from "react-icons/fi";
 import { MdHomeRepairService } from "react-icons/md";
-import {
-  ADMIN_STATS,
-  ADMIN_USERS,
-  ADMIN_SERVICES,
-  ADMIN_BOOKINGS,
-} from "../../../data/admin.data";
-
-import usePageTitle from "./../../../hooks/usePageTitle";
+import toast from "react-hot-toast";
+import { axiosSecure } from "../../../utils/axios";
+import usePageTitle from "../../../hooks/usePageTitle";
 
 const statsIcons = [
   { icon: FiUsers, color: "bg-blue-50 text-blue-600" },
@@ -33,18 +27,62 @@ const statusConfig = {
 };
 
 const AdminDashboardHome = () => {
-  const pendingServices = ADMIN_SERVICES.filter((s) => !s.isApproved);
-  const recentBookings = ADMIN_BOOKINGS.slice(0, 3);
-  const recentUsers = ADMIN_USERS.slice(0, 4);
+  const [users, setUsers] = useState([]);
+  const [services, setServices] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  usePageTitle("Admin Dashboard - Home"); // Set page title for better UX and SEO
+  usePageTitle("Admin Dashboard");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersRes, servicesRes, bookingsRes] = await Promise.all([
+          axiosSecure.get("/users"),
+          axiosSecure.get("/services/admin/all"),
+          axiosSecure.get("/bookings"),
+        ]);
+        setUsers(usersRes.data.users || []);
+        setServices(servicesRes.data.services || []);
+        setBookings(bookingsRes.data.bookings || []);
+      } catch {
+        toast.error("Failed to load data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const stats = [
+    { label: "Total Users", value: users.length },
+    { label: "Total Services", value: services.length },
+    { label: "Total Bookings", value: bookings.length },
+    {
+      label: "Total Providers",
+      value: users.filter((u) => u.role === "provider").length,
+    },
+  ];
+
+  const pendingServices = services.filter((s) => !s.isApproved);
+  const recentBookings = bookings.slice(0, 3);
+  const recentUsers = users.slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-500 rounded-2xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-1">Admin Dashboard </h1>
+            <h1 className="text-2xl font-bold mb-1">Admin Dashboard 👋</h1>
             <p className="text-purple-100 text-sm">
               Manage users, services, and bookings from here.
             </p>
@@ -65,7 +103,7 @@ const AdminDashboardHome = () => {
             </div>
           </div>
 
-          {/* Pending Services Alert */}
+          {/* Pending Alert */}
           {pendingServices.length > 0 && (
             <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20 flex-shrink-0 text-center">
               <p className="text-white text-xs font-medium">
@@ -82,7 +120,7 @@ const AdminDashboardHome = () => {
 
       {/* ── Stats Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {ADMIN_STATS.map(({ label, value }, index) => {
+        {stats.map(({ label, value }, index) => {
           const { icon: Icon, color } = statsIcons[index];
           return (
             <div
@@ -102,7 +140,7 @@ const AdminDashboardHome = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Pending Services ── */}
+        {/* ── Pending Approvals ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -123,15 +161,15 @@ const AdminDashboardHome = () => {
 
           {pendingServices.length > 0 ? (
             <div className="divide-y divide-gray-100">
-              {pendingServices.map((service) => (
-                <div key={service.id} className="px-6 py-4">
+              {pendingServices.slice(0, 3).map((service) => (
+                <div key={service._id} className="px-6 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">
                         {service.title}
                       </p>
                       <p className="text-gray-400 text-xs mt-0.5">
-                        by {service.providerName}
+                        by {service.providerId?.name || "Provider"}
                       </p>
                       <p className="text-gray-400 text-xs">
                         {service.category} · ৳{service.price}
@@ -166,35 +204,42 @@ const AdminDashboardHome = () => {
               View all <FiArrowRight size={14} />
             </Link>
           </div>
-          <div className="divide-y divide-gray-100">
-            {recentBookings.map((booking) => (
-              <div key={booking.id} className="px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">
-                      {booking.service}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      {booking.customerName} → {booking.providerName}
-                    </p>
-                    <p className="text-gray-400 text-xs">
-                      {booking.date} · {booking.time}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status].class}`}
-                    >
-                      {statusConfig[booking.status].label}
-                    </span>
-                    <p className="font-semibold text-purple-600 text-sm">
-                      ৳{booking.price}
-                    </p>
+
+          {recentBookings.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {recentBookings.map((booking) => (
+                <div key={booking._id} className="px-6 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">
+                        {booking.serviceId?.title || "Service"}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        {booking.customerId?.name} → {booking.providerId?.name}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        {booking.date} · {booking.time}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status]?.class}`}
+                      >
+                        {statusConfig[booking.status]?.label}
+                      </span>
+                      <p className="font-semibold text-purple-600 text-sm">
+                        ৳{booking.price}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center">
+              <p className="text-gray-400 text-sm">No bookings yet.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -213,7 +258,7 @@ const AdminDashboardHome = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
-                {["User", "Role", "Status", "Joined", "Bookings"].map((h) => (
+                {["User", "Role", "Status", "Joined"].map((h) => (
                   <th
                     key={h}
                     className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3"
@@ -226,14 +271,14 @@ const AdminDashboardHome = () => {
             <tbody className="divide-y divide-gray-100">
               {recentUsers.map((user) => (
                 <tr
-                  key={user.id}
+                  key={user._id}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xs font-bold">
-                          {user.name.charAt(0)}
+                          {user.name?.charAt(0)}
                         </span>
                       </div>
                       <div>
@@ -249,7 +294,9 @@ const AdminDashboardHome = () => {
                       className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
                         user.role === "provider"
                           ? "bg-green-100 text-green-700"
-                          : "bg-blue-100 text-blue-700"
+                          : user.role === "admin"
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-blue-100 text-blue-700"
                       }`}
                     >
                       {user.role}
@@ -267,11 +314,8 @@ const AdminDashboardHome = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-gray-600 text-sm">{user.joinDate}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {user.totalBookings}
+                    <p className="text-gray-600 text-sm">
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </p>
                   </td>
                 </tr>

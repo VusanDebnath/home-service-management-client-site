@@ -13,8 +13,7 @@ import { MdHomeRepairService } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { axiosPublic } from "../../utils/axios";
-import usePageTitle from './../../hooks/usePageTitle';
-
+import usePageTitle from "./../../hooks/usePageTitle";
 
 // Reusable Input Component
 const InputField = ({ icon: Icon, error, rightElement, ...props }) => (
@@ -66,9 +65,17 @@ const Register = () => {
         password: data.password,
         role: data.role,
       });
+
       login(res.data.token);
-      toast.success("Account created successfully!");
-      navigate("/dashboard");
+      toast.success("Account created successfully! 🎉");
+
+      // Role অনুযায়ী redirect
+      const decoded = res.data.user;
+      if (decoded.role === "provider") {
+        navigate("/dashboard/provider");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong!");
     } finally {

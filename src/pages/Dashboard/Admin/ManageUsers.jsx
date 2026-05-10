@@ -1,19 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiSearch, FiX, FiShield, FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { ADMIN_USERS } from "../../../data/admin.data";
-import usePageTitle from './../../../hooks/usePageTitle';
+import { axiosSecure } from "../../../utils/axios";
+import usePageTitle from "../../../hooks/usePageTitle";
 
 const ROLE_TABS = [
   { label: "All", value: "all" },
   { label: "Customer", value: "customer" },
   { label: "Provider", value: "provider" },
+  { label: "Admin", value: "admin" },
 ];
 
 const ManageUsers = () => {
-  const [users, setUsers] = useState(ADMIN_USERS);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
+
+  usePageTitle("Manage Users");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axiosSecure.get("/users");
+        setUsers(res.data.users || []);
+      } catch {
+        toast.error("Failed to load users.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter((u) => {
     const matchTab = activeTab === "all" || u.role === activeTab;
@@ -23,36 +41,52 @@ const ManageUsers = () => {
     return matchTab && matchSearch;
   });
 
-  const handleToggleBlock = (id) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? { ...u, status: u.status === "active" ? "blocked" : "active" }
-          : u,
-      ),
-    );
-    const user = users.find((u) => u.id === id);
-    toast.success(
-      user.status === "active" ? "User blocked!" : "User unblocked!",
-    );
-    // Backend হলে: await axiosSecure.patch(`/users/${id}/toggle-block`)
+  const handleToggleBlock = async (id) => {
+    try {
+      await axiosSecure.patch(`/users/${id}/toggle-block`);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === id
+            ? { ...u, status: u.status === "active" ? "blocked" : "active" }
+            : u,
+        ),
+      );
+      toast.success("User status updated!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
   };
 
-  const handleDelete = (id) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    toast.success("User deleted!");
-    // Backend হলে: await axiosSecure.delete(`/users/${id}`)
+  const handleMakeAdmin = async (id) => {
+    try {
+      await axiosSecure.patch(`/users/${id}/make-admin`);
+      setUsers((prev) =>
+        prev.map((u) => (u._id === id ? { ...u, role: "admin" } : u)),
+      );
+      toast.success("User promoted to Admin!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
   };
 
-  const handleMakeAdmin = (id) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, role: "admin" } : u)),
+  const handleDelete = async (id) => {
+    try {
+      await axiosSecure.delete(`/users/${id}`);
+      setUsers((prev) => prev.filter((u) => u._id !== id));
+      toast.success("User deleted!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
     );
-    toast.success("User promoted to Admin!");
-    // Backend হলে: await axiosSecure.patch(`/users/${id}/make-admin`)
-  };
+  }
 
-  usePageTitle("Manage Users - Admin Dashboard");// Set page title for better UX and SEO
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -89,7 +123,7 @@ const ManageUsers = () => {
         </div>
 
         {/* Role Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {ROLE_TABS.map(({ label, value }) => (
             <button
               key={value}
@@ -123,14 +157,7 @@ const ManageUsers = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
-                {[
-                  "User",
-                  "Role",
-                  "Status",
-                  "Joined",
-                  "Bookings",
-                  "Actions",
-                ].map((h) => (
+                {["User", "Role", "Status", "Joined", "Actions"].map((h) => (
                   <th
                     key={h}
                     className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3"
@@ -143,7 +170,7 @@ const ManageUsers = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredUsers.map((user) => (
                 <tr
-                  key={user.id}
+                  key={user._id}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   {/* User */}
@@ -151,7 +178,7 @@ const ManageUsers = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-sm font-bold">
-                          {user.name.charAt(0)}
+                          {user.name?.charAt(0)}
                         </span>
                       </div>
                       <div>
@@ -193,13 +220,8 @@ const ManageUsers = () => {
 
                   {/* Joined */}
                   <td className="px-6 py-4">
-                    <p className="text-gray-600 text-sm">{user.joinDate}</p>
-                  </td>
-
-                  {/* Bookings */}
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {user.totalBookings}
+                    <p className="text-gray-600 text-sm">
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </p>
                   </td>
 
@@ -209,18 +231,16 @@ const ManageUsers = () => {
                       {/* Make Admin */}
                       {user.role !== "admin" && (
                         <button
-                          onClick={() => handleMakeAdmin(user.id)}
+                          onClick={() => handleMakeAdmin(user._id)}
                           className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-50 text-purple-600 border border-purple-200 text-xs font-medium rounded-lg hover:bg-purple-100 transition-colors"
-                          title="Make Admin"
                         >
-                          <FiShield size={12} />
-                          Admin
+                          <FiShield size={12} /> Admin
                         </button>
                       )}
 
                       {/* Block/Unblock */}
                       <button
-                        onClick={() => handleToggleBlock(user.id)}
+                        onClick={() => handleToggleBlock(user._id)}
                         className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                           user.status === "active"
                             ? "bg-yellow-50 text-yellow-600 border-yellow-200 hover:bg-yellow-100"
@@ -232,7 +252,7 @@ const ManageUsers = () => {
 
                       {/* Delete */}
                       <button
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => handleDelete(user._id)}
                         className="flex items-center gap-1 px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
                       >
                         <FiTrash2 size={12} />
@@ -245,7 +265,6 @@ const ManageUsers = () => {
           </table>
         </div>
 
-        {/* Empty State */}
         {filteredUsers.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-gray-400 text-sm">No users found.</p>

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiCalendar, FiClock, FiMapPin, FiStar, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { DUMMY_BOOKINGS } from "../../../data/bookings.data";
-import usePageTitle from './../../../hooks/usePageTitle';
+import { axiosSecure } from "../../../utils/axios";
+import usePageTitle from "../../../hooks/usePageTitle";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -20,34 +20,82 @@ const statusConfig = {
 };
 
 const MyBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [reviewModal, setReviewModal] = useState(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Active tab অনুযায়ী filter
-  const filteredBookings = DUMMY_BOOKINGS.filter(
+  usePageTitle("My Bookings");
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosSecure.get("/bookings/my");
+        setBookings(res.data.bookings || []);
+      } catch {
+        toast.error("Failed to load bookings.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
+
+  const filteredBookings = bookings.filter(
     (b) => activeTab === "all" || b.status === activeTab,
   );
 
-  const handleCancel = () => {
-    toast.success("Booking cancelled!");
-    // Backend হলে: axiosSecure.patch(`/bookings/${id}/cancel`)
+  const handleCancel = async (id) => {
+    try {
+      await axiosSecure.patch(`/bookings/${id}/cancel`);
+      setBookings((prev) =>
+        prev.map((b) => (b._id === id ? { ...b, status: "cancelled" } : b)),
+      );
+      toast.success("Booking cancelled!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to cancel!");
+    }
   };
 
-  const handleReviewSubmit = () => {
+  const handleReviewSubmit = async () => {
     if (rating === 0) {
       toast.error("Please select a rating!");
       return;
     }
-    toast.success("Review submitted! ⭐");
-    setReviewModal(null);
-    setRating(0);
-    setComment("");
-    // Backend হলে: axiosSecure.post('/reviews', { bookingId, rating, comment })
+    if (!comment.trim()) {
+      toast.error("Please write a comment!");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await axiosSecure.post("/reviews", {
+        bookingId: reviewModal._id,
+        rating,
+        comment,
+      });
+      toast.success("Review submitted! ⭐");
+      setReviewModal(null);
+      setRating(0);
+      setComment("");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to submit review!");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  usePageTitle("My Bookings - ServiceHub");// Set page title using custom hook
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,8 +127,8 @@ const MyBookings = () => {
               }`}
             >
               {value === "all"
-                ? DUMMY_BOOKINGS.length
-                : DUMMY_BOOKINGS.filter((b) => b.status === value).length}
+                ? bookings.length
+                : bookings.filter((b) => b.status === value).length}
             </span>
           </button>
         ))}
@@ -91,7 +139,7 @@ const MyBookings = () => {
         <div className="space-y-4">
           {filteredBookings.map((booking) => (
             <div
-              key={booking.id}
+              key={booking._id}
               className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-4">
@@ -99,29 +147,29 @@ const MyBookings = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-bold text-gray-900 truncate">
-                      {booking.service}
+                      {booking.serviceId?.title || "Service"}
                     </h3>
                     <span
-                      className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status].class}`}
+                      className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status]?.class}`}
                     >
-                      {statusConfig[booking.status].label}
+                      {statusConfig[booking.status]?.label}
                     </span>
                   </div>
                   <p className="text-gray-500 text-sm mb-3">
-                    by {booking.provider}
+                    by {booking.providerId?.name || "Provider"}
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs text-gray-500">
                     <span className="flex items-center gap-1.5">
-                      <FiCalendar size={12} className="text-blue-400" />{" "}
+                      <FiCalendar size={12} className="text-blue-400" />
                       {booking.date}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <FiClock size={12} className="text-green-400" />{" "}
+                      <FiClock size={12} className="text-green-400" />
                       {booking.time}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <FiMapPin size={12} className="text-red-400" />{" "}
-                      {booking.location}
+                      <FiMapPin size={12} className="text-red-400" />
+                      {booking.address}
                     </span>
                   </div>
                 </div>
@@ -142,7 +190,7 @@ const MyBookings = () => {
                     )}
                     {booking.status === "pending" && (
                       <button
-                        onClick={handleCancel}
+                        onClick={() => handleCancel(booking._id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
                       >
                         <FiX size={12} /> Cancel
@@ -173,14 +221,20 @@ const MyBookings = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900">Write a Review</h3>
               <button
-                onClick={() => setReviewModal(null)}
+                onClick={() => {
+                  setReviewModal(null);
+                  setRating(0);
+                  setComment("");
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <FiX size={20} />
               </button>
             </div>
 
-            <p className="text-gray-500 text-sm mb-4">{reviewModal.service}</p>
+            <p className="text-gray-500 text-sm mb-4">
+              {reviewModal.serviceId?.title}
+            </p>
 
             {/* Star Rating */}
             <div className="flex gap-2 mb-4">
@@ -213,16 +267,21 @@ const MyBookings = () => {
 
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => setReviewModal(null)}
+                onClick={() => {
+                  setReviewModal(null);
+                  setRating(0);
+                  setComment("");
+                }}
                 className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReviewSubmit}
-                className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700"
+                disabled={submitting}
+                className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:bg-blue-400"
               >
-                Submit Review
+                {submitting ? "Submitting..." : "Submit Review"}
               </button>
             </div>
           </div>

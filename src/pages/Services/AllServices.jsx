@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { FiSearch, FiFilter, FiX, FiGrid, FiList } from "react-icons/fi";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { FiSearch, FiX, FiGrid, FiList } from "react-icons/fi";
 import {
   MdPlumbing,
   MdElectricBolt,
@@ -9,151 +9,19 @@ import {
   MdFormatPaint,
   MdBuild,
 } from "react-icons/md";
+import toast from "react-hot-toast";
+import { axiosPublic } from "../../utils/axios";
 import ServiceCard from "../../components/home/ServiceCard";
 import usePageTitle from "../../hooks/usePageTitle";
 
-import { DUMMY_SERVICES } from "../../data/services.data"; // Dummy data for testing, replace with API data in production
-
-// ── Dummy Data ────────────────────────────────────── Not use now, just for reference. API থেকে আসবে data, এই structure মেনে আসতে হবে।
-// const DUMMY_SERVICES = [
-//   {
-//     _id: "1",
-//     title: "Professional Plumbing Repair",
-//     category: "Plumbing",
-//     price: 500,
-//     image:
-//       "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
-//     providerName: "Rahim Plumbing Co.",
-//     rating: 4.8,
-//     reviewCount: 124,
-//     location: "Dhaka",
-//     duration: "1-2 hours",
-//     isAvailable: true,
-//     description:
-//       "Expert plumbing services for all your home needs including pipe repair, installation, and maintenance.",
-//   },
-//   {
-//     _id: "2",
-//     title: "Home Electrical Wiring & Repair",
-//     category: "Electrical",
-//     price: 800,
-//     image:
-//       "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80",
-//     providerName: "Karim Electric",
-//     rating: 4.9,
-//     reviewCount: 89,
-//     location: "Dhaka",
-//     duration: "2-3 hours",
-//     isAvailable: true,
-//     description:
-//       "Safe and certified electrical services for residential and commercial properties.",
-//   },
-//   {
-//     _id: "3",
-//     title: "Deep Home Cleaning Service",
-//     category: "Cleaning",
-//     price: 1200,
-//     image:
-//       "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
-//     providerName: "CleanPro BD",
-//     rating: 4.7,
-//     reviewCount: 210,
-//     location: "Chittagong",
-//     duration: "3-4 hours",
-//     isAvailable: true,
-//     description:
-//       "Thorough deep cleaning service for your entire home using eco-friendly products.",
-//   },
-//   {
-//     _id: "4",
-//     title: "AC Installation & Servicing",
-//     category: "AC Repair",
-//     price: 1500,
-//     image:
-//       "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
-//     providerName: "Cool Air Services",
-//     rating: 4.6,
-//     reviewCount: 67,
-//     location: "Dhaka",
-//     duration: "2-3 hours",
-//     isAvailable: false,
-//     description:
-//       "Professional AC installation, servicing, and repair for all major brands.",
-//   },
-//   {
-//     _id: "5",
-//     title: "Interior & Exterior Painting",
-//     category: "Painting",
-//     price: 3000,
-//     image:
-//       "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&q=80",
-//     providerName: "Color Masters",
-//     rating: 4.8,
-//     reviewCount: 145,
-//     location: "Sylhet",
-//     duration: "1-2 days",
-//     isAvailable: true,
-//     description:
-//       "Premium quality painting service with best materials and skilled painters.",
-//   },
-//   {
-//     _id: "6",
-//     title: "Custom Furniture & Carpentry",
-//     category: "Carpentry",
-//     price: 2500,
-//     image:
-//       "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80",
-//     providerName: "Wood Works BD",
-//     rating: 4.5,
-//     reviewCount: 43,
-//     location: "Dhaka",
-//     duration: "1-3 days",
-//     isAvailable: true,
-//     description:
-//       "Custom furniture design and carpentry work for homes and offices.",
-//   },
-//   {
-//     _id: "7",
-//     title: "Bathroom Plumbing & Fitting",
-//     category: "Plumbing",
-//     price: 700,
-//     image:
-//       "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400&q=80",
-//     providerName: "Hasan Plumbers",
-//     rating: 4.4,
-//     reviewCount: 58,
-//     location: "Rajshahi",
-//     duration: "2-3 hours",
-//     isAvailable: true,
-//     description:
-//       "Complete bathroom plumbing solutions including fitting, repair and installation.",
-//   },
-//   {
-//     _id: "8",
-//     title: "Office Cleaning & Sanitization",
-//     category: "Cleaning",
-//     price: 2000,
-//     image:
-//       "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&q=80",
-//     providerName: "Office Clean Pro",
-//     rating: 4.9,
-//     reviewCount: 178,
-//     location: "Dhaka",
-//     duration: "3-5 hours",
-//     isAvailable: true,
-//     description:
-//       "Professional office cleaning and sanitization services for a healthy workplace.",
-//   },
-// ];
-
 const CATEGORIES = [
   { label: "All", icon: FiGrid, value: "all" },
-  { label: "Plumbing", icon: MdPlumbing, value: "plumbing" },
-  { label: "Electrical", icon: MdElectricBolt, value: "electrical" },
-  { label: "Cleaning", icon: MdCleaningServices, value: "cleaning" },
-  { label: "AC Repair", icon: MdAcUnit, value: "ac repair" },
-  { label: "Painting", icon: MdFormatPaint, value: "painting" },
-  { label: "Carpentry", icon: MdBuild, value: "carpentry" },
+  { label: "Plumbing", icon: MdPlumbing, value: "Plumbing" },
+  { label: "Electrical", icon: MdElectricBolt, value: "Electrical" },
+  { label: "Cleaning", icon: MdCleaningServices, value: "Cleaning" },
+  { label: "AC Repair", icon: MdAcUnit, value: "AC Repair" },
+  { label: "Painting", icon: MdFormatPaint, value: "Painting" },
+  { label: "Carpentry", icon: MdBuild, value: "Carpentry" },
 ];
 
 const SORT_OPTIONS = [
@@ -163,16 +31,16 @@ const SORT_OPTIONS = [
   { label: "Best Rated", value: "rating" },
 ];
 
-// ── Component ──────────────────────────────────────
-
 const AllServices = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("popular");
-  const [viewMode, setViewMode] = useState("grid"); // grid | list
-  const [showFilter, setShowFilter] = useState(false); //
+  const [viewMode, setViewMode] = useState("grid");
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // URL থেকে category নাও (Home থেকে click করলে আসে)
+  usePageTitle("All Services");
+
   const activeCategory = searchParams.get("category") || "all";
 
   const setCategory = (value) => {
@@ -184,47 +52,31 @@ const AllServices = () => {
     setSearchParams(searchParams);
   };
 
-  // Filter + Search + Sort একসাথে
-  const filteredServices = useMemo(() => {
-    let result = [...DUMMY_SERVICES];
+  // API থেকে services নাও
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (activeCategory !== "all") params.category = activeCategory;
+        if (search.trim()) params.search = search;
+        if (sortBy !== "popular") params.sort = sortBy;
 
-    // Category filter
-    if (activeCategory !== "all") {
-      result = result.filter(
-        (s) => s.category.toLowerCase() === activeCategory.toLowerCase(),
-      );
-    }
+        const res = await axiosPublic.get("/services", { params });
+        setServices(res.data.services || []);
+      } catch (err) {
+        toast.error("Failed to load services.");
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Search filter
-    if (search.trim()) {
-      result = result.filter(
-        (s) =>
-          s.title.toLowerCase().includes(search.toLowerCase()) ||
-          s.category.toLowerCase().includes(search.toLowerCase()) ||
-          s.providerName.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-
-    // Sort
-    switch (sortBy) {
-      case "price_asc":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price_desc":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      default:
-        break;
-    }
-
-    return result;
+    // 300ms debounce — search typing এ বারবার call না হয়
+    const timer = setTimeout(fetchServices, 300);
+    return () => clearTimeout(timer);
   }, [activeCategory, search, sortBy]);
 
-  usePageTitle("All Services - Home Service Management");// Custom hook to set page title (SEO এর জন্য ভালো, এবং user experience এর জন্যও ভালো)
-  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Page Header ── */}
@@ -281,10 +133,9 @@ const AllServices = () => {
 
         {/* ── Toolbar ── */}
         <div className="flex items-center justify-between mb-6">
-          {/* Result count */}
           <p className="text-gray-600 text-sm">
             <span className="font-semibold text-gray-900">
-              {filteredServices.length}
+              {services.length}
             </span>{" "}
             services found
           </p>
@@ -330,7 +181,12 @@ const AllServices = () => {
         </div>
 
         {/* ── Services Grid/List ── */}
-        {filteredServices.length > 0 ? (
+        {loading ? (
+          /* Loading State */
+          <div className="flex justify-center py-24">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : services.length > 0 ? (
           <div
             className={
               viewMode === "grid"
@@ -338,7 +194,7 @@ const AllServices = () => {
                 : "flex flex-col gap-4"
             }
           >
-            {filteredServices.map((service) => (
+            {services.map((service) => (
               <ServiceCard key={service._id} service={service} />
             ))}
           </div>
@@ -352,8 +208,7 @@ const AllServices = () => {
               No services found
             </h3>
             <p className="text-gray-500 text-sm mb-6">
-              Try adjusting your search or filter to find what you're looking
-              for.
+              Try adjusting your search or filter.
             </p>
             <button
               onClick={() => {

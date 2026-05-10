@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { axiosPublic } from "../../utils/axios";
-import useAuth from "../../hooks/useAuth";
-import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
 import { MdHomeRepairService } from "react-icons/md";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+import { axiosPublic } from "../../utils/axios";
 
 import usePageTitle from "../../hooks/usePageTitle";
 
@@ -32,9 +32,19 @@ const Login = () => {
         email: data.email,
         password: data.password,
       });
+
       login(res.data.token);
       toast.success("Welcome back! 👋");
-      navigate(from, { replace: true });
+
+      // Role অনুযায়ী redirect
+      const role = res.data.user.role;
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (role === "provider") {
+        navigate("/dashboard/provider");
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Invalid email or password!");
     } finally {

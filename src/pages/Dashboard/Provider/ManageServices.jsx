@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiPlus,
   FiEdit2,
@@ -11,8 +11,8 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
-import { PROVIDER_SERVICES } from "../../../data/provider.data";
-import usePageTitle from './../../../hooks/usePageTitle';
+import { axiosSecure } from "../../../utils/axios";
+import usePageTitle from "../../../hooks/usePageTitle";
 
 const CATEGORIES = [
   "Plumbing",
@@ -24,11 +24,13 @@ const CATEGORIES = [
 ];
 
 const ManageServices = () => {
-  const [services, setServices] = useState(PROVIDER_SERVICES);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editService, setEditService] = useState(null);
-  // editService null → নতুন service যোগ
-  // editService object → পুরনো service edit
+  const [submitting, setSubmitting] = useState(false);
+
+  usePageTitle("My Services");
 
   const {
     register,
@@ -37,9 +39,32 @@ const ManageServices = () => {
     formState: { errors },
   } = useForm();
 
+  const fetchServices = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosSecure.get("/services/my/services");
+      setServices(res.data.services || []);
+    } catch {
+      toast.error("Failed to load services.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
   const openAddModal = () => {
     setEditService(null);
-    reset({ title: "", category: "", price: "", description: "" });
+    reset({
+      title: "",
+      category: "",
+      price: "",
+      description: "",
+      duration: "",
+      location: "",
+    });
     setShowModal(true);
   };
 
@@ -49,66 +74,62 @@ const ManageServices = () => {
       title: service.title,
       category: service.category,
       price: service.price,
-      description: service.description || "",
+      description: service.description,
+      duration: service.duration,
+      location: service.location,
     });
     setShowModal(true);
   };
 
-  const onSubmit = (data) => {
-    if (editService) {
-      // Edit করছি
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === editService.id
-            ? {
-                ...s,
-                title: data.title,
-                category: data.category,
-                price: Number(data.price),
-              }
-            : s,
-        ),
-      );
-      toast.success("Service updated!");
-    } else {
-      // নতুন service যোগ
-      const newService = {
-        id: String(Date.now()),
-        title: data.title,
-        category: data.category,
-        price: Number(data.price),
-        image:
-          "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
-        rating: 0,
-        reviewCount: 0,
-        totalBookings: 0,
-        isAvailable: true,
-        isApproved: false, // Admin approve করার আগে pending
-      };
-      setServices((prev) => [...prev, newService]);
-      toast.success("Service added! Waiting for admin approval.");
-      // Backend হলে: await axiosSecure.post('/services', data)
+  const onSubmit = async (data) => {
+    setSubmitting(true);
+    try {
+      if (editService) {
+        await axiosSecure.patch(`/services/${editService._id}`, data);
+        toast.success("Service updated! Waiting for approval.");
+      } else {
+        await axiosSecure.post("/services", data);
+        toast.success("Service added! Waiting for admin approval.");
+      }
+      fetchServices();
+      setShowModal(false);
+      reset();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    } finally {
+      setSubmitting(false);
     }
-    setShowModal(false);
-    reset();
   };
 
-  const handleDelete = (id) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Service deleted!");
-    // Backend হলে: await axiosSecure.delete(`/services/${id}`)
+  const handleDelete = async (id) => {
+    try {
+      await axiosSecure.delete(`/services/${id}`);
+      setServices((prev) => prev.filter((s) => s._id !== id));
+      toast.success("Service deleted!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete!");
+    }
   };
 
-  const handleToggleAvailability = (id) => {
-    setServices((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, isAvailable: !s.isAvailable } : s,
-      ),
+  const handleToggleAvailability = async (id) => {
+    try {
+      const res = await axiosSecure.patch(`/services/${id}/toggle`);
+      setServices((prev) =>
+        prev.map((s) => (s._id === id ? res.data.service : s)),
+      );
+    } catch {
+      toast.error("Failed to toggle availability!");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
     );
-    // Backend হলে: await axiosSecure.patch(`/services/${id}/toggle`)
-  };
+  }
 
-  usePageTitle("Manage Services - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -128,21 +149,17 @@ const ManageServices = () => {
         </button>
       </div>
 
-      {/* Stats row */}
+      {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          {
-            label: "Total Services",
-            value: services.length,
-            color: "text-blue-600",
-          },
+          { label: "Total", value: services.length, color: "text-blue-600" },
           {
             label: "Active",
             value: services.filter((s) => s.isAvailable && s.isApproved).length,
             color: "text-green-600",
           },
           {
-            label: "Pending Approval",
+            label: "Pending",
             value: services.filter((s) => !s.isApproved).length,
             color: "text-yellow-600",
           },
@@ -158,114 +175,116 @@ const ManageServices = () => {
       </div>
 
       {/* Services List */}
-      <div className="space-y-4">
-        {services.map((service) => (
-          <div
-            key={service.id}
-            className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex gap-4">
-              {/* Image */}
-              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                <img
-                  src={service.image}
-                  alt={service.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-sm">
-                      {service.title}
-                    </h3>
-                    <p className="text-gray-500 text-xs mt-0.5">
-                      {service.category}
-                    </p>
-                  </div>
-                  {/* Approval Status */}
-                  {service.isApproved ? (
-                    <span className="flex-shrink-0 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      ✓ Approved
-                    </span>
-                  ) : (
-                    <span className="flex-shrink-0 px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                      ⏳ Pending
-                    </span>
-                  )}
+      {services.length > 0 ? (
+        <div className="space-y-4">
+          {services.map((service) => (
+            <div
+              key={service._id}
+              className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex gap-4">
+                {/* Image */}
+                <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
-                {/* Meta */}
-                <div className="flex items-center gap-4 mt-2">
-                  <span className="font-bold text-blue-600 text-sm">
-                    ৳{service.price}
-                  </span>
-                  {service.rating > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <FiStar
-                        size={11}
-                        className="text-yellow-400 fill-yellow-400"
-                      />
-                      {service.rating} ({service.reviewCount})
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-400">
-                    {service.totalBookings} bookings
-                  </span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 mt-3">
-                  {/* Toggle availability */}
-                  <button
-                    onClick={() => handleToggleAvailability(service.id)}
-                    disabled={!service.isApproved}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      service.isAvailable && service.isApproved
-                        ? "bg-green-50 text-green-600 border border-green-200 hover:bg-green-100"
-                        : "bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {service.isAvailable ? (
-                      <>
-                        <FiToggleRight size={14} /> Active
-                      </>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-sm">
+                        {service.title}
+                      </h3>
+                      <p className="text-gray-500 text-xs mt-0.5">
+                        {service.category}
+                      </p>
+                    </div>
+                    {service.isApproved ? (
+                      <span className="flex-shrink-0 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        ✓ Approved
+                      </span>
                     ) : (
-                      <>
-                        <FiToggleLeft size={14} /> Inactive
-                      </>
+                      <span className="flex-shrink-0 px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                        ⏳ Pending
+                      </span>
                     )}
-                  </button>
+                  </div>
 
-                  {/* Edit */}
-                  <button
-                    onClick={() => openEditModal(service)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <FiEdit2 size={13} /> Edit
-                  </button>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="font-bold text-blue-600 text-sm">
+                      ৳{service.price}
+                    </span>
+                    {service.rating > 0 && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <FiStar
+                          size={11}
+                          className="text-yellow-400 fill-yellow-400"
+                        />
+                        {service.rating} ({service.reviewCount})
+                      </span>
+                    )}
+                  </div>
 
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(service.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <FiTrash2 size={13} /> Delete
-                  </button>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 mt-3">
+                    {/* Toggle */}
+                    <button
+                      onClick={() => handleToggleAvailability(service._id)}
+                      disabled={!service.isApproved}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        service.isAvailable && service.isApproved
+                          ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                          : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {service.isAvailable ? (
+                        <>
+                          <FiToggleRight size={14} /> Active
+                        </>
+                      ) : (
+                        <>
+                          <FiToggleLeft size={14} /> Inactive
+                        </>
+                      )}
+                    </button>
+
+                    {/* Edit */}
+                    <button
+                      onClick={() => openEditModal(service)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <FiEdit2 size={13} /> Edit
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDelete(service._id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <FiTrash2 size={13} /> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl p-12 border border-gray-100 text-center">
+          <p className="text-gray-400 text-sm">
+            No services yet. Add your first service!
+          </p>
+        </div>
+      )}
 
       {/* ── Add/Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-            {/* Modal Header */}
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900 text-lg">
                 {editService ? "Edit Service" : "Add New Service"}
@@ -301,7 +320,7 @@ const ManageServices = () => {
                 )}
               </div>
 
-              {/* Category + Price — 2 column */}
+              {/* Category + Price */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
@@ -355,18 +374,55 @@ const ManageServices = () => {
                 </div>
               </div>
 
+              {/* Duration + Location */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Duration
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="1-2 hours"
+                    className="w-full h-11 px-4 text-sm rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    {...register("duration")}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Dhaka"
+                    className="w-full h-11 px-4 text-sm rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    {...register("location")}
+                  />
+                </div>
+              </div>
+
               {/* Description */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">
-                  Description{" "}
-                  <span className="text-gray-400 font-normal">(optional)</span>
+                  Description
                 </label>
                 <textarea
-                  placeholder="Describe your service..."
+                  placeholder="Describe your service in detail..."
                   rows={3}
-                  className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 outline-none resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  {...register("description")}
+                  className={`w-full px-4 py-3 text-sm rounded-xl border outline-none resize-none transition-all ${
+                    errors.description
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  }`}
+                  {...register("description", {
+                    required: "Description is required",
+                  })}
                 />
+                {errors.description && (
+                  <p className="text-red-500 text-xs">
+                    ⚠ {errors.description.message}
+                  </p>
+                )}
               </div>
 
               {/* Pending note */}
@@ -390,10 +446,15 @@ const ManageServices = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                  disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
                   <FiSave size={14} />
-                  {editService ? "Save Changes" : "Add Service"}
+                  {submitting
+                    ? "Saving..."
+                    : editService
+                      ? "Save Changes"
+                      : "Add Service"}
                 </button>
               </div>
             </form>

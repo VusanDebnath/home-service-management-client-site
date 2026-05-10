@@ -72,8 +72,8 @@ const SidebarContent = ({ user, onLogout, onClose }) => (
         Main Menu
       </p>
       
-      // User এর role অনুযায়ী navigation দেখাবে, provider হলে providerNav,
-      অন্যথায় customerNav
+      {/* // User এর role অনুযায়ী navigation দেখাবে, provider হলে providerNav,
+      অন্যথায় customerNav */}
       {(user?.role === "provider" ? providerNav : customerNav).map(
         ({ label, icon: Icon, path }) => (
           <NavLink

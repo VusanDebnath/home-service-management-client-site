@@ -12,12 +12,16 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
-import usePageTitle from './../../../hooks/usePageTitle';
+import usePageTitle from "../../../hooks/usePageTitle";
+import { axiosSecure } from "../../../utils/axios";
 
 const MyProfile = () => {
   const { user } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  usePageTitle("My Profile");
 
   const {
     register,
@@ -27,8 +31,8 @@ const MyProfile = () => {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
-      phone: "",
-      address: "",
+      phone: user?.phone || "",
+      address: user?.address || "",
     },
   });
 
@@ -42,28 +46,40 @@ const MyProfile = () => {
 
   const newPassword = watch("newPassword");
 
-  const onProfileUpdate = async () => {
+  const onProfileUpdate = async (data) => {
+    setSaving(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      await axiosSecure.patch("/users/me", {
+        name: data.name,
+        phone: data.phone,
+        address: data.address,
+      });
       toast.success("Profile updated!");
       setEditMode(false);
-    } catch {
-      toast.error("Failed to update!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update!");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const onPasswordChange = async () => {
+  const onPasswordChange = async (data) => {
+    setSaving(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      await axiosSecure.patch("/users/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
       toast.success("Password changed!");
       setChangingPassword(false);
       resetPass();
-    } catch {
-      toast.error("Failed to change password!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password!");
+    } finally {
+      setSaving(false);
     }
   };
 
-  usePageTitle("My Profile");// Set page title to "My Profile"
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,10 +95,7 @@ const MyProfile = () => {
         <div className="lg:col-span-1 space-y-4">
           {/* Profile Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Cover */}
             <div className="h-20 bg-gradient-to-r from-blue-600 to-blue-400" />
-
-            {/* Avatar + Info */}
             <div className="px-5 pb-5">
               <div className="flex justify-between items-start -mt-8 mb-3">
                 <div className="w-16 h-16 bg-blue-600 rounded-2xl border-4 border-white flex items-center justify-center shadow-md">
@@ -109,7 +122,6 @@ const MyProfile = () => {
                   )}
                 </button>
               </div>
-
               <h2 className="font-bold text-gray-900 text-lg">{user?.name}</h2>
               <p className="text-gray-500 text-sm">{user?.email}</p>
               <span className="mt-2 inline-block text-xs bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full capitalize font-medium">
@@ -118,21 +130,25 @@ const MyProfile = () => {
             </div>
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Info */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 text-sm mb-4">
-              Account Overview
+              Account Info
             </h3>
             <div className="space-y-3">
               {[
-                { label: "Total Bookings", value: "12" },
-                { label: "Completed", value: "9" },
-                { label: "Pending", value: "2" },
-                { label: "Member Since", value: "2025" },
+                { label: "Role", value: user?.role },
+                { label: "Status", value: "Active" },
+                {
+                  label: "Member Since",
+                  value: user?.createdAt
+                    ? new Date(user.createdAt).getFullYear()
+                    : "2025",
+                },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-gray-500 text-sm">{label}</span>
-                  <span className="font-semibold text-gray-900 text-sm">
+                  <span className="font-semibold text-gray-900 text-sm capitalize">
                     {value}
                   </span>
                 </div>
@@ -153,7 +169,6 @@ const MyProfile = () => {
               onSubmit={handleSubmit(onProfileUpdate)}
               className="space-y-4"
             >
-              {/* Name + Phone — 2 column */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div className="space-y-1.5">
@@ -252,20 +267,20 @@ const MyProfile = () => {
                 </div>
               </div>
 
-              {/* Save Button */}
               {editMode && (
                 <div className="flex gap-3 pt-2">
                   <button
                     type="submit"
-                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-blue-200"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-colors"
                   >
                     <FiSave size={14} />
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditMode(false)}
-                    className="px-6 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50"
                   >
                     Cancel
                   </button>
@@ -302,7 +317,6 @@ const MyProfile = () => {
                 className="space-y-4 mt-5 pt-5 border-t border-gray-100"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Current */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
                       Current
@@ -322,7 +336,6 @@ const MyProfile = () => {
                     )}
                   </div>
 
-                  {/* New */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
                       New
@@ -343,7 +356,6 @@ const MyProfile = () => {
                     )}
                   </div>
 
-                  {/* Confirm */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
                       Confirm
@@ -368,10 +380,11 @@ const MyProfile = () => {
 
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
                   <FiSave size={14} />
-                  Update Password
+                  {saving ? "Updating..." : "Update Password"}
                 </button>
               </form>
             )}

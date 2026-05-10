@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   FiArrowLeft,
@@ -12,145 +12,73 @@ import {
 } from "react-icons/fi";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
-import usePageTitle from "./../../hooks/usePageTitle";
-
-// Dummy data for testing, replace with API data in production
-import { DUMMY_SERVICES } from "../../data/services.data"; 
-
-// Dummy data (AllServices থেকে same data)
-// const DUMMY_SERVICES = [
-//   {
-//     _id: "1",
-//     title: "Professional Plumbing Repair",
-//     category: "Plumbing",
-//     price: 500,
-//     image:
-//       "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&q=80",
-//     providerName: "Rahim Plumbing Co.",
-//     providerImage: null,
-//     providerPhone: "+880 1700 000001",
-//     rating: 4.8,
-//     reviewCount: 124,
-//     location: "Dhaka",
-//     duration: "1-2 hours",
-//     isAvailable: true,
-//     description:
-//       "Expert plumbing services for all your home needs including pipe repair, installation, and maintenance. Our certified plumbers use the latest tools and techniques to ensure quality work.",
-//     features: [
-//       "Licensed & certified plumbers",
-//       "Same-day service available",
-//       "Warranty on all repairs",
-//       "Eco-friendly materials used",
-//       "Free inspection included",
-//     ],
-//   },
-//   {
-//     _id: "2",
-//     title: "Home Electrical Wiring & Repair",
-//     category: "Electrical",
-//     price: 800,
-//     image:
-//       "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80",
-//     providerName: "Karim Electric",
-//     providerImage: null,
-//     providerPhone: "+880 1700 000002",
-//     rating: 4.9,
-//     reviewCount: 89,
-//     location: "Dhaka",
-//     duration: "2-3 hours",
-//     isAvailable: true,
-//     description:
-//       "Safe and certified electrical services for residential and commercial properties.",
-//     features: [
-//       "Certified electricians",
-//       "Safety inspection included",
-//       "1-year workmanship warranty",
-//       "Emergency service available",
-//       "Transparent pricing",
-//     ],
-//   },
-// ];
-
-
-const DUMMY_REVIEWS = [
-  {
-    id: 1,
-    name: "Ahmed K.",
-    avatar: "AK",
-    rating: 5,
-    date: "2 days ago",
-    comment:
-      "Excellent service! Very professional and completed the work on time.",
-  },
-  {
-    id: 2,
-    name: "Sarah M.",
-    avatar: "SM",
-    rating: 5,
-    date: "1 week ago",
-    comment: "Highly recommend! Fair pricing and quality work.",
-  },
-  {
-    id: 3,
-    name: "Rafi H.",
-    avatar: "RH",
-    rating: 4,
-    date: "2 weeks ago",
-    comment:
-      "Good service overall. Arrived on time and fixed the issue quickly.",
-  },
-];
+import usePageTitle from "../../hooks/usePageTitle";
+import { axiosPublic, axiosSecure } from "../../utils/axios";
 
 const ServiceDetails = () => {
   const { id } = useParams();
-  // URL থেকে id নাও: /services/1 → id = "1"
-
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [service, setService] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Dummy data থেকে service খোঁজো
-  const service = DUMMY_SERVICES.find((s) => s._id === id);
+  usePageTitle(service?.title || "Service Details");
 
-  // Service না পেলে 404
-  if (!service) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-3">
-          Service Not Found
-        </h2>
-        <Link to="/services" className="text-blue-600 hover:underline">
-          ← Back to Services
-        </Link>
-      </div>
-    );
-  }
+  // Service নাও
+  useEffect(() => {
+    const fetchService = async () => {
+      try {
+        const res = await axiosPublic.get(`/services/${id}`);
+        setService(res.data.service);
+      } catch {
+        toast.error("Service not found.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchService();
+  }, [id]);
+
+  // Reviews নাও
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const res = await axiosPublic.get(`/reviews/service/${id}`);
+        setReviews(res.data.reviews || []);
+      } catch {
+        console.error("Failed to load reviews.");
+      }
+    };
+    if (id) fetchReviews();
+  }, [id]);
 
   const handleBooking = async () => {
-    // Login নেই?
     if (!user) {
       toast.error("Please login to book a service!");
       navigate("/login");
       return;
     }
-
-    // Date/Time select করেনি?
     if (!selectedDate || !selectedTime) {
       toast.error("Please select a date and time!");
       return;
     }
-
     setBookingLoading(true);
     try {
-      // Backend হলে এখানে API call হবে
-      // await axiosSecure.post('/bookings', { serviceId: id, date: selectedDate, time: selectedTime })
-      await new Promise((r) => setTimeout(r, 1000)); // Fake loading
+      await axiosSecure.post("/bookings", {
+        serviceId: id,
+        date: selectedDate,
+        time: selectedTime,
+        address: user.address || "Dhaka",
+      });
       toast.success("Booking confirmed! 🎉");
       navigate("/dashboard");
-    } catch {
-      toast.error("Booking failed. Please try again.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Booking failed!");
     } finally {
       setBookingLoading(false);
     }
@@ -166,11 +94,33 @@ const ServiceDetails = () => {
     "4:00 PM",
   ];
 
-  usePageTitle(`${service.title} - Service Details`); // Custom hook to set page title (SEO এর জন্য ভালো, এবং user experience এর জন্যও ভালো)
+  // Loading
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Not Found
+  if (!service) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">Service Not Found</h2>
+        <Link
+          to="/services"
+          className="text-blue-600 hover:underline flex items-center gap-1"
+        >
+          <FiArrowLeft size={16} /> Back to Services
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ── Back Button ── */}
+      {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 pt-6">
         <Link
           to="/services"
@@ -212,7 +162,6 @@ const ServiceDetails = () => {
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
                 {service.title}
               </h1>
-
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
                 <span className="flex items-center gap-1.5">
                   <FiStar
@@ -220,41 +169,23 @@ const ServiceDetails = () => {
                     className="text-yellow-400 fill-yellow-400"
                   />
                   <span className="font-semibold text-gray-800">
-                    {service.rating}
+                    {service.rating > 0 ? service.rating : "New"}
                   </span>
-                  ({service.reviewCount} reviews)
+                  {service.reviewCount > 0 &&
+                    `(${service.reviewCount} reviews)`}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <FiMapPin size={14} className="text-blue-400" />
-                  {service.location}
+                  {service.location || "Dhaka"}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <FiClock size={14} className="text-green-400" />
-                  {service.duration}
+                  {service.duration || "1-2 hours"}
                 </span>
               </div>
-
               <p className="text-gray-600 leading-relaxed">
                 {service.description}
               </p>
-            </div>
-
-            {/* Features */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                What's Included
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {service.features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-2.5">
-                    <FiCheckCircle
-                      size={16}
-                      className="text-green-500 flex-shrink-0"
-                    />
-                    <span className="text-gray-700 text-sm">{feature}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Provider Info */}
@@ -268,62 +199,69 @@ const ServiceDetails = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-gray-900">
-                    {service.providerName}
+                    {service.providerId?.name || "Unknown"}
                   </p>
                   <p className="text-gray-500 text-sm capitalize">
                     {service.category} Specialist
                   </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar
-                        key={i}
-                        size={12}
-                        className="text-yellow-400 fill-yellow-400"
-                      />
-                    ))}
-                    <span className="text-gray-500 text-xs ml-1">
-                      {service.rating} rating
-                    </span>
-                  </div>
+                  {service.rating > 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <FiStar
+                          key={i}
+                          size={12}
+                          className="text-yellow-400 fill-yellow-400"
+                        />
+                      ))}
+                      <span className="text-gray-500 text-xs ml-1">
+                        {service.rating} rating
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <a
-                  href={`tel:${service.providerPhone}`}
-                  className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-50 transition-colors"
-                >
-                  <FiPhone size={14} />
-                  Call
-                </a>
+                {service.providerId?.phone && (
+                  <a
+                    href={`tel:${service.providerId?.phone}`}
+                    className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-50 transition-colors"
+                  >
+                    <FiPhone size={14} />
+                    Call
+                  </a>
+                )}
               </div>
             </div>
 
             {/* Reviews */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-5">
-                Customer Reviews
+                Customer Reviews ({reviews.length})
               </h2>
-              <div className="space-y-5">
-                {DUMMY_REVIEWS.map(
-                  ({ id, name, avatar, rating, date, comment }) => (
+
+              {reviews.length > 0 ? (
+                <div className="space-y-5">
+                  {reviews.map((review) => (
                     <div
-                      key={id}
+                      key={review._id}
                       className="pb-5 border-b border-gray-100 last:border-0 last:pb-0"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
                             <span className="text-white text-xs font-bold">
-                              {avatar}
+                              {review.customerId?.name?.charAt(0)}
                             </span>
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900 text-sm">
-                              {name}
+                              {review.customerId?.name}
                             </p>
-                            <p className="text-gray-400 text-xs">{date}</p>
+                            <p className="text-gray-400 text-xs">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                         <div className="flex gap-0.5">
-                          {[...Array(rating)].map((_, i) => (
+                          {[...Array(review.rating)].map((_, i) => (
                             <FiStar
                               key={i}
                               size={12}
@@ -333,12 +271,17 @@ const ServiceDetails = () => {
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm leading-relaxed">
-                        {comment}
+                        {review.comment}
                       </p>
                     </div>
-                  ),
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FiStar size={32} className="text-gray-200 mx-auto mb-2" />
+                  <p className="text-gray-400 text-sm">No reviews yet.</p>
+                </div>
+              )}
             </div>
           </div>
 

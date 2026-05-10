@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FiArrowRight,
@@ -8,14 +9,10 @@ import {
   FiTrendingUp,
 } from "react-icons/fi";
 import { MdHomeRepairService } from "react-icons/md";
+import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
-import {
-  PROVIDER_STATS,
-  PROVIDER_BOOKINGS,
-  PROVIDER_SERVICES,
-} from "../../../data/provider.data";
-
-import usePageTitle from "./../../../hooks/usePageTitle";
+import usePageTitle from "../../../hooks/usePageTitle";
+import { axiosSecure } from "../../../utils/axios";
 
 const statusConfig = {
   pending: { label: "Pending", class: "bg-yellow-100 text-yellow-700" },
@@ -28,17 +25,59 @@ const statsIcons = [
   { icon: MdHomeRepairService, color: "bg-blue-50 text-blue-600" },
   { icon: FiCalendar, color: "bg-purple-50 text-purple-600" },
   { icon: FiCheckCircle, color: "bg-green-50 text-green-600" },
-  { icon: FiTrendingUp, color: "bg-orange-50 text-orange-600" },
+  { icon: FiClock, color: "bg-yellow-50 text-yellow-600" },
 ];
 
 const ProviderDashboardHome = () => {
   const { user } = useAuth();
+  const [services, setServices] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentBookings = PROVIDER_BOOKINGS.slice(0, 3);
-  const approvedServices = PROVIDER_SERVICES.filter((s) => s.isApproved);
-  const pendingServices = PROVIDER_SERVICES.filter((s) => !s.isApproved);
+  usePageTitle("Provider Dashboard");
 
-  usePageTitle("Provider Dashboard - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [servicesRes, bookingsRes] = await Promise.all([
+          axiosSecure.get("/services/my/services"),
+          axiosSecure.get("/bookings/provider"),
+        ]);
+        setServices(servicesRes.data.services || []);
+        setBookings(bookingsRes.data.bookings || []);
+      } catch {
+        toast.error("Failed to load data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const stats = [
+    { label: "Total Services", value: services.length },
+    { label: "Total Bookings", value: bookings.length },
+    {
+      label: "Completed Jobs",
+      value: bookings.filter((b) => b.status === "completed").length,
+    },
+    {
+      label: "Pending",
+      value: bookings.filter((b) => b.status === "pending").length,
+    },
+  ];
+
+  const pendingServices = services.filter((s) => !s.isApproved);
+  const recentBookings = bookings.slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}
@@ -70,7 +109,7 @@ const ProviderDashboardHome = () => {
 
           {/* Pending approval alert */}
           {pendingServices.length > 0 && (
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20 flex-shrink-0">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20 flex-shrink-0 text-center">
               <p className="text-white text-xs font-medium">
                 ⏳ Pending Approval
               </p>
@@ -85,7 +124,7 @@ const ProviderDashboardHome = () => {
 
       {/* ── Stats Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {PROVIDER_STATS.map(({ label, value }, index) => {
+        {stats.map(({ label, value }, index) => {
           const { icon: Icon, color } = statsIcons[index];
           return (
             <div
@@ -116,35 +155,43 @@ const ProviderDashboardHome = () => {
               View all <FiArrowRight size={14} />
             </Link>
           </div>
-          <div className="divide-y divide-gray-100">
-            {recentBookings.map((booking) => (
-              <div key={booking.id} className="px-6 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">
-                      {booking.customerName}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5 truncate">
-                      {booking.service}
-                    </p>
-                    <p className="text-gray-400 text-xs mt-1">
-                      {booking.date} · {booking.time}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status].class}`}
-                    >
-                      {statusConfig[booking.status].label}
-                    </span>
-                    <p className="font-semibold text-blue-600 text-sm">
-                      ৳{booking.price}
-                    </p>
+
+          {recentBookings.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {recentBookings.map((booking) => (
+                <div key={booking._id} className="px-6 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">
+                        {booking.customerId?.name || "Customer"}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-0.5 truncate">
+                        {booking.serviceId?.title || "Service"}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        {booking.date} · {booking.time}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status]?.class}`}
+                      >
+                        {statusConfig[booking.status]?.label}
+                      </span>
+                      <p className="font-semibold text-blue-600 text-sm">
+                        ৳{booking.price}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center">
+              <FiCalendar size={28} className="text-gray-200 mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">No bookings yet.</p>
+            </div>
+          )}
         </div>
 
         {/* ── My Services ── */}
@@ -158,53 +205,70 @@ const ProviderDashboardHome = () => {
               Manage <FiArrowRight size={14} />
             </Link>
           </div>
-          <div className="divide-y divide-gray-100">
-            {PROVIDER_SERVICES.slice(0, 3).map((service) => (
-              <div key={service.id} className="px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">
-                      {service.title}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-gray-400 text-xs">
-                        {service.category}
-                      </span>
-                      {service.rating > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <FiStar
-                            size={11}
-                            className="text-yellow-400 fill-yellow-400"
-                          />
-                          {service.rating}
+
+          {services.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {services.slice(0, 3).map((service) => (
+                <div key={service._id} className="px-6 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">
+                        {service.title}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-gray-400 text-xs">
+                          {service.category}
+                        </span>
+                        {service.rating > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <FiStar
+                              size={11}
+                              className="text-yellow-400 fill-yellow-400"
+                            />
+                            {service.rating}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <p className="font-semibold text-blue-600 text-sm">
+                        ৳{service.price}
+                      </p>
+                      {service.isApproved ? (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            service.isAvailable
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {service.isAvailable ? "Active" : "Inactive"}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                          Pending
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <p className="font-semibold text-blue-600 text-sm">
-                      ৳{service.price}
-                    </p>
-                    {service.isApproved ? (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          service.isAvailable
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {service.isAvailable ? "Active" : "Inactive"}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                        Pending
-                      </span>
-                    )}
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center">
+              <MdHomeRepairService
+                size={28}
+                className="text-gray-200 mx-auto mb-2"
+              />
+              <p className="text-gray-400 text-sm">No services yet.</p>
+              <Link
+                to="/dashboard/provider/services"
+                className="inline-block mt-3 text-blue-600 text-sm font-medium hover:underline"
+              >
+                Add your first service →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,14 +1,17 @@
 import axios from "axios";
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+// .env থেকে URL নাও
+
 const axiosPublic = axios.create({
-  baseURL: "<http://localhost:5000/api>",
+  baseURL: BASE_URL,
 });
 
 const axiosSecure = axios.create({
-  baseURL: "<http://localhost:5000/api>",
+  baseURL: BASE_URL,
 });
 
-// Request interceptor — JWT token auto attach
+// Request interceptor — token auto attach
 axiosSecure.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -26,6 +29,7 @@ axiosSecure.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
+      localStorage.removeItem("auth-storage");
       window.location.href = "/login";
     }
     return Promise.reject(error);

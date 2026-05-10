@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import useAuth from "./hooks/useAuth";
 
 import AdminLayout from "./layouts/AdminLayout";
@@ -33,17 +33,26 @@ import ErrorPage from "./pages/ErrorPage";
 // ScrollToTop component, page change হলে top এ scroll করার জন্য
 import ScrollToTop from "./components/common/ScrollToTop";
 
-// Development helper, শুধু development এ দেখাবে
-// Backend ready হলে এই file টা delete করবো
-import DevHelper from "./components/common/DevHelper";
-
 const App = () => {
+  // App component mount হলে user এর authentication status check করার জন্য
   const { checkAuth } = useAuth();
-
   useEffect(() => {
     checkAuth();
   }, []);
 
+  // User এর role অনুযায়ী redirect করার জন্য
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      // Admin কে admin dashboard এ পাঠাও
+      if (window.location.pathname.startsWith("/dashboard")) {
+        navigate("/admin/dashboard");
+      }
+    }
+  }, [user]);
+  
   return (
     <>
       {/* page change হলে top এ scroll করার জন্য */}
@@ -126,9 +135,6 @@ const App = () => {
 
         <Route path="*" element={<ErrorPage />} />
       </Routes>
-
-      {/* Development Helper - Sodho Development er jonno Backend ready hole delete kore dibo */}
-      <DevHelper />
     </>
   );
 };

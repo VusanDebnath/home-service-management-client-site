@@ -1,16 +1,8 @@
-import { useState } from "react";
-import {
-  FiCalendar,
-  FiClock,
-  FiMapPin,
-  FiUser,
-  FiPhone,
-  FiCheck,
-  FiX,
-} from "react-icons/fi";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { PROVIDER_BOOKINGS } from "../../../data/provider.data";
-import usePageTitle from './../../../hooks/usePageTitle';
+import { FiCalendar, FiCheck, FiClock, FiMapPin, FiX } from "react-icons/fi";
+import usePageTitle from "../../../hooks/usePageTitle";
+import { axiosSecure } from "../../../utils/axios";
 
 const STATUS_TABS = [
   { label: "All", value: "all" },
@@ -27,38 +19,75 @@ const statusConfig = {
 };
 
 const ProviderBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
-  const [bookings, setBookings] = useState(PROVIDER_BOOKINGS);
+
+  usePageTitle("Bookings");
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosSecure.get("/bookings/provider");
+        setBookings(res.data.bookings || []);
+      } catch {
+        toast.error("Failed to load bookings.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
 
   const filteredBookings = bookings.filter(
     (b) => activeTab === "all" || b.status === activeTab,
   );
 
-  const handleConfirm = (id) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "confirmed" } : b)),
-    );
-    toast.success("Booking confirmed!");
-    // Backend হলে: await axiosSecure.patch(`/bookings/${id}/confirm`)
+  const handleConfirm = async (id) => {
+    try {
+      await axiosSecure.patch(`/bookings/${id}/confirm`);
+      setBookings((prev) =>
+        prev.map((b) => (b._id === id ? { ...b, status: "confirmed" } : b)),
+      );
+      toast.success("Booking confirmed!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
   };
 
-  const handleComplete = (id) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "completed" } : b)),
-    );
-    toast.success("Marked as completed!");
-    // Backend হলে: await axiosSecure.patch(`/bookings/${id}/complete`)
+  const handleComplete = async (id) => {
+    try {
+      await axiosSecure.patch(`/bookings/${id}/complete`);
+      setBookings((prev) =>
+        prev.map((b) => (b._id === id ? { ...b, status: "completed" } : b)),
+      );
+      toast.success("Marked as completed!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
   };
 
-  const handleCancel = (id) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)),
-    );
-    toast.error("Booking cancelled.");
-    // Backend হলে: await axiosSecure.patch(`/bookings/${id}/cancel`)
+  const handleCancel = async (id) => {
+    try {
+      await axiosSecure.patch(`/bookings/${id}/cancel`);
+      setBookings((prev) =>
+        prev.map((b) => (b._id === id ? { ...b, status: "cancelled" } : b)),
+      );
+      toast.error("Booking cancelled.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed!");
+    }
   };
 
-  usePageTitle("Provider Bookings - Dashboard");/// এই কম্পোনেন্টে এসে পেজ টাইটেল সেট হবে
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -102,37 +131,37 @@ const ProviderBookings = () => {
         <div className="space-y-4">
           {filteredBookings.map((booking) => (
             <div
-              key={booking.id}
+              key={booking._id}
               className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-4">
-                {/* Customer Info */}
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  {/* Top row */}
+                  {/* Customer */}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-xs font-bold">
-                        {booking.customerName.charAt(0)}
+                        {booking.customerId?.name?.charAt(0)}
                       </span>
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-sm">
-                        {booking.customerName}
+                        {booking.customerId?.name || "Customer"}
                       </p>
                       <p className="text-gray-400 text-xs">
-                        {booking.customerEmail}
+                        {booking.customerId?.email}
                       </p>
                     </div>
                     <span
-                      className={`ml-auto flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status].class}`}
+                      className={`ml-auto flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[booking.status]?.class}`}
                     >
-                      {statusConfig[booking.status].label}
+                      {statusConfig[booking.status]?.label}
                     </span>
                   </div>
 
                   {/* Service */}
                   <p className="font-medium text-gray-800 text-sm mb-2">
-                    {booking.service}
+                    {booking.serviceId?.title || "Service"}
                   </p>
 
                   {/* Meta */}
@@ -156,13 +185,13 @@ const ProviderBookings = () => {
                     {booking.status === "pending" && (
                       <>
                         <button
-                          onClick={() => handleConfirm(booking.id)}
+                          onClick={() => handleConfirm(booking._id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
                         >
                           <FiCheck size={12} /> Confirm
                         </button>
                         <button
-                          onClick={() => handleCancel(booking.id)}
+                          onClick={() => handleCancel(booking._id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
                         >
                           <FiX size={12} /> Cancel
@@ -171,7 +200,7 @@ const ProviderBookings = () => {
                     )}
                     {booking.status === "confirmed" && (
                       <button
-                        onClick={() => handleComplete(booking.id)}
+                        onClick={() => handleComplete(booking._id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 border border-green-200 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors"
                       >
                         <FiCheck size={12} /> Mark as Completed
